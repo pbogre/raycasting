@@ -3,19 +3,23 @@
 #include <SFML/Config.hpp>
 #include <cmath>
 
-//#include <player.h>
+float to_rad(float deg);
+float to_deg(float rad);
 
 int main(int argc, char *argv[])
 {
         int frequency = 6;
-        if (argc > 1) frequency = strtol(argv[1], NULL, 10);
+        if (argc > 1 && strtol(argv[1], NULL, 10) > 0) frequency = strtol(argv[1], NULL, 10);
+        int lines_number = (360/frequency);
 
-        sf::RenderWindow window(sf::VideoMode(900, 600), "Raycasting");
+        sf::ContextSettings settings;
+            settings.antialiasingLevel = 4;
+        sf::RenderWindow window(sf::VideoMode(900, 600), "Raycasting", sf::Style::Fullscreen, settings);
         window.setFramerateLimit(60);
 
         sf::RectangleShape line(sf::Vector2f(1, 300));
+        sf::RectangleShape wall(sf::Vector2f(25, 300));
 
-        int frame = 0;
         while (window.isOpen()){
 
                 sf::Event event;
@@ -30,31 +34,53 @@ int main(int argc, char *argv[])
                 }
                 window.clear();
 
-                line.setPosition(sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y);
-                
 
-                for(int i = 0; i < 360/frequency; i++){
+                int mouse_x = sf::Mouse::getPosition(window).x;
+                int mouse_y = sf::Mouse::getPosition(window).y;
 
-                        sf::RectangleShape v_component(sf::Vector2f(1, line.getPosition().y));
-                                v_component.setFillColor(sf::Color::Green);
-                        sf::RectangleShape h_component(sf::Vector2f(line.getPosition().x, 1));
-                                h_component.setPosition(0, line.getPosition().y);
-                                h_component.setFillColor(sf::Color::Red);
+                float vert = (window.getSize().y - mouse_y);
 
-                        float hypothenuse = sqrt(pow(line.getPosition().x,2)+pow(line.getPosition().y,2));
-                        line.setSize(sf::Vector2f(line.getSize().x, hypothenuse));
+                wall.setPosition(850, 300);
+                wall.setRotation(60);
+                wall.setFillColor(sf::Color::Transparent);
+                wall.setOutlineThickness(2);
+                wall.setOutlineColor(sf::Color::Red);
+                window.draw(wall);
 
-                        line.setRotation((frequency)+frame);
-                        //std::cout << "Rotation: " << line.getRotation() << " | Position: " << line.getPosition().x << ", " << line.getPosition().y << std::endl;
+                line.setPosition(mouse_x, mouse_y);
+                for(int i = 0; i < lines_number; i++){
+                    float rotation = i*frequency;
 
-                        window.draw(line);
-                        window.draw(v_component);
-                        window.draw(h_component);
+                    float hypothenuse = ( vert / cos(to_rad(rotation)) );
+                    if (rotation >= 90 && rotation < 270) {
+                        hypothenuse = -( mouse_y / cos(to_rad(rotation)) );
+                    }
+
+                    line.setRotation(rotation);
+                    line.setSize(sf::Vector2f(line.getSize().x, hypothenuse));
+
+                    window.draw(line);
                 }
+                
+                sf::RectangleShape v_component(sf::Vector2f(1, vert));
+                    v_component.setPosition(0, window.getSize().y - vert);
+                    v_component.setFillColor(sf::Color::Green);
+                sf::RectangleShape h_component(sf::Vector2f(mouse_x, 1));
+                    h_component.setPosition(0, mouse_y);
+                    h_component.setFillColor(sf::Color::Red);
+                window.draw(v_component);
+                window.draw(h_component);
 
                 window.display();
-                frame++;
     }
 
     return 0;
+}
+
+float to_rad(float deg){
+    return deg * M_PI / 180;
+}
+
+float to_deg(float rad){
+    return rad * 180 / M_PI;
 }
