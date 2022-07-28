@@ -2,7 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
 
-bool debug = true;
+bool debug = false;
 float line_length = 1000;
 
 sf::Vector2f intersection(sf::Vector2f line1_point1, sf::Vector2f line1_point2, sf::Vector2f line2_point1, sf::Vector2f line2_point2);
@@ -28,12 +28,16 @@ int main(int argc, char *argv[])
         // Shape, Hitbox, Line Setup
         sf::VertexArray line(sf::Lines, 2);
 
-        sf::RectangleShape shape(sf::Vector2f(80, 400));
+        // sf::RectangleShape shape(sf::Vector2f(80, 400));
+        //     shape.setPosition(500, 300);
+        //     shape.setRotation(60);
+        //     shape.setFillColor(sf::Color::Transparent);
+        //     shape.setOutlineColor(sf::Color::Red);
+        //     shape.setOutlineThickness(1);
+        sf::CircleShape shape(100, 5);
             shape.setPosition(500, 300);
             shape.setRotation(60);
-            shape.setFillColor(sf::Color::Transparent);
-            shape.setOutlineColor(sf::Color::Red);
-            shape.setOutlineThickness(1);
+            shape.setFillColor(sf::Color::Blue);
         int shape_sides = shape.getPointCount();
 
         sf::VertexArray obstacle(sf::Lines, shape_sides+1);
