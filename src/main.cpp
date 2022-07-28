@@ -27,13 +27,7 @@ int main(int argc, char *argv[])
 
         // Shape, Hitbox, Line Setup
         sf::VertexArray line(sf::Lines, 2);
-
-        // sf::RectangleShape shape(sf::Vector2f(80, 400));
-        //     shape.setPosition(500, 300);
-        //     shape.setRotation(60);
-        //     shape.setFillColor(sf::Color::Transparent);
-        //     shape.setOutlineColor(sf::Color::Red);
-        //     shape.setOutlineThickness(1);
+        
         sf::CircleShape shape(100, 5);
             shape.setPosition(500, 300);
             shape.setRotation(60);
