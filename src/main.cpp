@@ -1,12 +1,14 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
-#include <SFML/Config.hpp>
 #include <cmath>
+
+bool debug = false;
 
 float to_rad(float deg);
 float to_deg(float rad);
 
 sf::Vector2f intersection(sf::Vector2f line1[], sf::Vector2f line2[]);
+bool is_between(sf::Vector2f line[], sf::Vector2f point);
 
 sf::CircleShape mark_point(sf::Vector2f point, sf::Color color=sf::Color::Blue);
 sf::VertexArray draw_line(sf::Vector2f points[], int extend=0);
@@ -19,7 +21,7 @@ int main(int argc, char *argv[])
 
         sf::ContextSettings settings;
             settings.antialiasingLevel = 4;
-        sf::RenderWindow window(sf::VideoMode(900, 600), "Raycasting", sf::Style::Fullscreen, settings);
+        sf::RenderWindow window(sf::VideoMode(1400, 950), "Raycasting", sf::Style::Default, settings);
         window.setFramerateLimit(60);
 
         sf::RectangleShape line(sf::Vector2f(1, 300));
@@ -54,6 +56,7 @@ int main(int argc, char *argv[])
                 for(int i = 0; i < lines_number; i++){
                     float rotation = i*frequency;
                     line.setRotation(rotation);
+                    line.setSize(sf::Vector2f(line.getSize().x, 500));
 
                     sf::Vector2f line_points[line.getPointCount() / 2];
                         line_points[0] = line.getTransform().transformPoint(line.getPoint(0));
@@ -61,26 +64,28 @@ int main(int argc, char *argv[])
 
                     line.setFillColor(sf::Color::White);
                     for(int i = 0; i < wall.getPointCount(); i++){
-                        window.draw(draw_line(wall_points[i], 1000));
+                        if(debug) window.draw(draw_line(wall_points[i], 1000));
 
                         sf::Vector2f intersection_point = intersection(line_points, wall_points[i]);
-                        sf::Color intersection_color = sf::Color(0, 0, 160, 255);
-                        
-                        if(intersection_point.x <= std::max(wall_points[i][0].x, wall_points[i][1].x) &&
-                           intersection_point.x >= std::min(wall_points[i][0].x, wall_points[i][1].x)) {
-                                line.setFillColor(sf::Color::Magenta);
-                                intersection_color = sf::Color(0, 0, 255, 255);
+                        // this is unreadable but its just pythagoras
+                        float distance = sqrt(pow(line_points[0].x - intersection_point.x, 2) + pow(line_points[0].y - intersection_point.y, 2));
+                        if(distance <= line.getSize().y){
+                            if( is_between(line_points, intersection_point) &&
+                                is_between(wall_points[i], intersection_point)) {
+                                    line.setSize(sf::Vector2f(line.getSize().x, distance));
+                            }
                         }
-                        window.draw(mark_point(intersection_point, intersection_color));
+
+                        if(debug) window.draw(mark_point(intersection_point));
                     }
-                    
-                    line.setSize(sf::Vector2f(line.getSize().x, window.getSize().x));
 
                     window.draw(line);
                     window.draw(wall);
-                    for(int i = 0; i < wall.getPointCount(); i++){
-                        window.draw(mark_point(wall_points[i][0], sf::Color::Green));
-                        window.draw(mark_point(wall_points[i][1], sf::Color::Green));
+                    if(debug){
+                        for(int i = 0; i < wall.getPointCount(); i++){
+                            window.draw(mark_point(wall_points[i][0], sf::Color::Green));
+                            window.draw(mark_point(wall_points[i][1], sf::Color::Green));
+                        }
                     }
                 }
 
@@ -96,6 +101,15 @@ float to_rad(float deg){
 
 float to_deg(float rad){
     return rad * 180 / M_PI;
+}
+
+bool is_between(sf::Vector2f line[], sf::Vector2f point){
+    if( point.x <= std::max(line[0].x, line[1].x) &&
+        point.x >= std::min(line[0].x, line[1].x) &&
+        point.y <= std::max(line[0].y, line[1].y) &&
+        point.y >= std::min(line[0].y, line[1].y)
+        ) return true;
+    return false;
 }
 
 sf::Vector2f intersection(sf::Vector2f line1[], sf::Vector2f line2[]) {
