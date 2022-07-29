@@ -2,15 +2,12 @@
 
 class obstacleMap{
     public:
-        std::vector<sf::CircleShape> obstacles;
         std::vector<std::vector<sf::Vertex>> obstacles_points;
+        std::vector<sf::CircleShape> obstacles;
         int obstacles_count;
-        int sides_count;
 
         void create_points(){
-            for(auto obstacle: obstacles){
-                sides_count += obstacle.getPointCount();
-            }
+            std::vector<std::vector<sf::Vertex>> new_obstacles_points;
             obstacles_count = obstacles.size();
             
             for(int oi = 0; oi < obstacles_count; oi++){
@@ -24,7 +21,8 @@ class obstacleMap{
                 };
                 current_obstacle_points.push_back(current_obstacle_points[0]);
 
-                obstacles_points.push_back(current_obstacle_points);
+                new_obstacles_points.push_back(current_obstacle_points);
             }
+            obstacles_points = new_obstacles_points;
         }
 };
