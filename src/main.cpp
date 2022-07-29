@@ -3,7 +3,6 @@
 #include <cmath>
 
 bool debug = false;
-float line_length = 1000;
 
 sf::Vector2f intersection(sf::Vector2f line1_point1, sf::Vector2f line1_point2, sf::Vector2f line2_point1, sf::Vector2f line2_point2);
 bool is_between(sf::Vector2f line_point1, sf::Vector2f line_point2, sf::Vector2f point);
@@ -13,90 +12,85 @@ sf::VertexArray mark_line(sf::Vector2f point1, sf::Vector2f point2, int extend=0
 
 int main(int argc, char *argv[])
 {
-        // Arguments
-        int frequency = 6;
-        if (argc > 1 && strtol(argv[1], NULL, 10) > 0) frequency = strtol(argv[1], NULL, 10);
-        int lines_number = (360/frequency);
-        
+    // Arguments
+    float frequency = 0.036;
+    if (argc > 1 && strtol(argv[1], NULL, 10) > 0) frequency = strtol(argv[1], NULL, 10);
+    int rays_number = (360/frequency);
+    
 
-        // Window Setup
-        sf::ContextSettings settings;
-            settings.antialiasingLevel = 4;
-        sf::RenderWindow window(sf::VideoMode(1400, 950), "Raycasting", sf::Style::Default, settings);
-        window.setFramerateLimit(60);
+    // Window Setup
+    sf::ContextSettings settings;
+        settings.antialiasingLevel = 4;
+    sf::RenderWindow window(sf::VideoMode(1400, 950), "Raycasting", sf::Style::Default, settings);
+    window.setFramerateLimit(60);
 
-        // Shape, Hitbox, Line Setup
-        sf::VertexArray line(sf::Lines, 2);
-        
-        sf::CircleShape shape(100, 5);
-            shape.setPosition(500, 300);
-            shape.setRotation(60);
-            shape.setFillColor(sf::Color::Blue);
-        int shape_sides = shape.getPointCount();
+    // Shape, Hitbox, Ray Setup
+    sf::VertexArray ray(sf::Lines, 2);
+    
+    sf::CircleShape shape(100, 5);
+        shape.setPosition(500, 300);
+        shape.setRotation(60);
+        shape.setFillColor(sf::Color::Blue);
+    int shape_sides = shape.getPointCount();
 
-        sf::VertexArray obstacle(sf::Lines, shape_sides+1);
-        for (int i = 0; i < shape_sides; i++){
-            obstacle[i].position = shape.getTransform().transformPoint(shape.getPoint(i));
-            obstacle[i].color = sf::Color::Yellow;
+    sf::VertexArray obstacle(sf::Lines, shape_sides+1);
+    for (int i = 0; i < shape_sides; i++){
+        obstacle[i].position = shape.getTransform().transformPoint(shape.getPoint(i));
+        obstacle[i].color = sf::Color::Yellow;
+    }
+    obstacle[shape_sides].position = obstacle[0].position;
+
+    while (window.isOpen()){
+
+        sf::Event event;
+        while (window.pollEvent(event))
+        {
+            if (event.type == sf::Event::Closed)
+                    window.close();   
+            if (event.type == sf::Event::Resized){
+                    sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
+                    window.setView(sf::View(visibleArea));
+            }
         }
-        obstacle[shape_sides].position = obstacle[0].position;
+        window.clear();
 
-        while (window.isOpen()){
+        float mouse_x = sf::Mouse::getPosition(window).x;
+        float mouse_y = sf::Mouse::getPosition(window).y;
 
-                sf::Event event;
-                while (window.pollEvent(event))
-                {
-                        if (event.type == sf::Event::Closed)
-                                window.close();   
-                        if (event.type == sf::Event::Resized){
-                                sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
-                                window.setView(sf::View(visibleArea));
-                        }
+        for(int li = 0; li < rays_number; li++){
+            float rotation = (li*frequency) * M_PI / 180;
+
+            // Set ray endpoints
+            ray[0].position = sf::Vector2f(mouse_x, mouse_y);
+            float radius = 10000;
+            float ray_x = mouse_x - radius * sin(rotation);
+            float ray_y = mouse_y + radius * cos(rotation);
+            ray[1].position = sf::Vector2f(ray_x, ray_y);
+
+            // Wall collision
+            for(int i = 0; i < shape_sides; i++){
+                sf::Vector2f intersection_point = intersection(ray[0].position, ray[1].position, obstacle[i].position, obstacle[i+1].position);
+                //window.draw(mark_point(intersection_point));
+                if( is_between(ray[0].position, ray[1].position, intersection_point) &&
+                    is_between(obstacle[i].position, obstacle[i+1].position, intersection_point)) {
+                        ray[1].position = intersection_point;
                 }
-                window.clear();
+            }
 
-                float mouse_x = sf::Mouse::getPosition(window).x;
-                float mouse_y = sf::Mouse::getPosition(window).y;
+            // Render current ray
+            window.draw(ray);
+        }
 
-                for(int i = 0; i < lines_number; i++){
-                    float rotation = (i*frequency) * M_PI / 180; // rotation in radians
+        // Render shapes
+        window.draw(shape);
+        if(debug){
+            for(int i = 0; i < shape_sides; i++){
+                window.draw(mark_line(obstacle[i].position, obstacle[i+1].position, 10000));
+                window.draw(mark_point(obstacle[i].position, sf::Color::Green));
+            }
+        }
 
-                    // Set line endpoints
-                    line[0].position = sf::Vector2f(mouse_x, mouse_y);
-                    float radius = line_length;
-                    float line_x = mouse_x - radius * sin(rotation);
-                    float line_y = mouse_y + radius * cos(rotation);
-                    line[1].position = sf::Vector2f(line_x, line_y);
-
-                    // Wall collision
-                    for(int i = 0; i < shape_sides; i++){
-                        if(debug) window.draw(mark_line(obstacle[i].position, obstacle[i+1].position, 1000));
-
-                        sf::Vector2f intersection_point = intersection(line[0].position, line[1].position, obstacle[i].position, obstacle[i+1].position);
-                        // this is unreadable but its just pythagoras
-                        float distance = sqrt(pow(line[0].position.x - intersection_point.x, 2) + pow(line[0].position.y - intersection_point.y, 2));
-                        if(distance <= line_length){
-                            if( is_between(line[0].position, line[1].position, intersection_point) &&
-                                is_between(obstacle[i].position, obstacle[i+1].position, intersection_point)) {
-                                    if(debug) window.draw(mark_point(intersection_point));
-                                    line[1].position = intersection_point;
-                            }
-                        }
-
-                        if(debug) window.draw(mark_point(intersection_point, sf::Color(100, 100, 100, 100)));
-                    }
-
-                    // Render
-                    window.draw(line);
-                    window.draw(shape);
-                    if(debug){
-                        for(int i = 0; i < shape_sides; i++){
-                            window.draw(mark_point(obstacle[i].position, sf::Color::Green));
-                        }
-                    }
-                }
-
-                window.display();
+        window.display();
     }
 
     return 0;
