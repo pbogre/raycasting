@@ -53,14 +53,6 @@ int main(int argc, char *argv[])
 
     obstacleMap.create_points();
     std::vector<std::vector<sf::Vertex>> obstacles_points = obstacleMap.obstacles_points;
-    for(int oi = 0; oi < obstacleMap.obstacles_count; oi++){
-        for(int si = 0; si < obstacleMap.obstacles[oi].getPointCount(); si++){
-            sf::Vector2f p1 = obstacles_points[oi][si].position;
-            sf::Vector2f p2 = obstacles_points[oi][si+1].position;
-            std::cout << "(" << p1.x << ", " << p1.y << ")-(" << p2.x << ", " << p2.y << ")" << std::endl;
-        }
-        std::cout << std::endl;
-    }
 
     while (window.isOpen()){
 
