@@ -2,6 +2,8 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
 
+#include "obstacle.hpp"
+
 bool debug = false;
 
 sf::Vector2f intersection(sf::Vector2f line1_point1, sf::Vector2f line1_point2, sf::Vector2f line2_point1, sf::Vector2f line2_point2);
@@ -23,22 +25,42 @@ int main(int argc, char *argv[])
     sf::RenderWindow window(sf::VideoMode(1400, 950), "Raycasting", sf::Style::Default, settings);
     window.setFramerateLimit(60);
 
-    // Shape, Hitbox, Ray Setup
+    // Obstacle & Ray Setup
     sf::VertexArray ray(sf::Lines, 2);
+    sf::CircleShape obstacle;
     
-    sf::CircleShape shape(100, 5);
-        shape.setPosition(500, 300);
-        shape.setRotation(60);
-        shape.setFillColor(sf::Color::Blue);
-    int shape_sides = shape.getPointCount();
+    obstacleMap obstacleMap;
+    obstacle.setRadius(100);
+    obstacle.setPointCount(5);
+    obstacle.setPosition(500, 300);
+    obstacle.setRotation(60);
+    obstacle.setFillColor(sf::Color::Blue);
+    obstacleMap.obstacles.push_back(obstacle);
 
-    sf::VertexArray obstacle(sf::Lines, shape_sides+1);
-    for (int i = 0; i < shape_sides; i++){
-        obstacle[i].position = shape.getTransform().transformPoint(shape.getPoint(i));
-        obstacle[i].color = sf::Color::Yellow;
+    obstacle.setRadius(160);
+    obstacle.setPointCount(3);
+    obstacle.setPosition(900, 200);
+    obstacle.setRotation(-45);
+    obstacle.setFillColor(sf::Color::Yellow);
+    obstacleMap.obstacles.push_back(obstacle);
+
+    obstacle.setRadius(60);
+    obstacle.setPointCount(6);
+    obstacle.setPosition(450, 600);
+    obstacle.setRotation(30);
+    obstacle.setFillColor(sf::Color::Red);
+    obstacleMap.obstacles.push_back(obstacle);
+
+    obstacleMap.create_points();
+    std::vector<std::vector<sf::Vertex>> obstacles_points = obstacleMap.obstacles_points;
+    for(int oi = 0; oi < obstacleMap.obstacles_count; oi++){
+        for(int si = 0; si < obstacleMap.obstacles[oi].getPointCount(); si++){
+            sf::Vector2f p1 = obstacles_points[oi][si].position;
+            sf::Vector2f p2 = obstacles_points[oi][si+1].position;
+            std::cout << "(" << p1.x << ", " << p1.y << ")-(" << p2.x << ", " << p2.y << ")" << std::endl;
+        }
+        std::cout << std::endl;
     }
-    obstacle[shape_sides].position = obstacle[0].position;
-
 
     while (window.isOpen()){
 
@@ -57,9 +79,9 @@ int main(int argc, char *argv[])
         double mouse_x = sf::Mouse::getPosition(window).x;
         double mouse_y = sf::Mouse::getPosition(window).y;
 
-        for(int li = 0; li < rays_number; li++){
-            double rotation = (li*frequency) * M_PI / 180;
-            if(rotation == 0 || rotation == M_PI) rotation -= 0.0001; // avoid infinite gradients
+        for(int ri = 0; ri < rays_number; ri++){
+            double rotation = (ri*frequency) * M_PI / 180;
+            if(rotation == 0 || rotation == M_PI) rotation -= 0.00001; // avoid infinite gradients
 
             // Set ray endpoints
             ray[0].position = sf::Vector2f(mouse_x, mouse_y);
@@ -68,13 +90,17 @@ int main(int argc, char *argv[])
             double ray_y = mouse_y + radius * cos(rotation);
             ray[1].position = sf::Vector2f(ray_x, ray_y);
 
-            // Wall collision
-            for(int i = 0; i < shape_sides; i++){
-                sf::Vector2f intersection_point = intersection(ray[0].position, ray[1].position, obstacle[i].position, obstacle[i+1].position);
-                //window.draw(mark_point(intersection_point));
-                if( is_between(ray[0].position, ray[1].position, intersection_point) &&
-                    is_between(obstacle[i].position, obstacle[i+1].position, intersection_point)) {
-                        ray[1].position = intersection_point;
+            // Obstacle collision
+            for(int oi = 0; oi < obstacleMap.obstacles_count; oi++){
+                std::vector<sf::Vertex> obstacle_points = obstacles_points[oi];
+                for(int si = 0; si < obstacleMap.obstacles[oi].getPointCount(); si++){
+
+                    sf::Vector2f intersection_point = intersection(ray[0].position, ray[1].position, obstacle_points[si].position, obstacle_points[si+1].position);
+                    if( is_between(ray[0].position, ray[1].position, intersection_point) &&
+                        is_between(obstacle_points[si].position, obstacle_points[si+1].position, intersection_point)) {
+                            ray[1].position = intersection_point;
+                            if(debug)window.draw(mark_point(intersection_point));
+                    }
                 }
             }
 
@@ -82,12 +108,16 @@ int main(int argc, char *argv[])
             window.draw(ray);
         }
 
-        // Render shapes
-        window.draw(shape);
+        // Render obstacles
+        for(auto obstacle: obstacleMap.obstacles){
+            window.draw(obstacle);
+        }
         if(debug){
-            for(int i = 0; i < shape_sides; i++){
-                window.draw(mark_line(obstacle[i].position, obstacle[i+1].position, 10000));
-                window.draw(mark_point(obstacle[i].position, sf::Color::Green));
+            for(int oi = 0; oi < obstacleMap.obstacles_count; oi++){
+                for(int si = 0; si < obstacleMap.obstacles[oi].getPointCount(); si++){
+                    window.draw(mark_line(obstacles_points[oi][si].position, obstacles_points[oi][si+1].position, 10000));
+                    window.draw(mark_point(obstacles_points[oi][si].position, sf::Color::Green));
+                }
             }
         }
 
@@ -122,7 +152,6 @@ sf::Vector2f intersection(sf::Vector2f line1_point1, sf::Vector2f line1_point2, 
     // x = (intercept2 - intercept1) / (gradient2 - gradient1)
     double intersection_x = -((intercept2 - intercept1) / (gradient2 - gradient1));
     double intersection_y = gradient2 * intersection_x + intercept2;
-    //std::cout << "y=" << gradient1 << "x + " << intercept1 << "(" << intersection_x << ", " << intersection_y << ")" << std::endl;
 
     return sf::Vector2f(intersection_x, intersection_y);
 }
