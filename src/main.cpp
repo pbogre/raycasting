@@ -13,11 +13,10 @@ sf::VertexArray mark_line(sf::Vector2f point1, sf::Vector2f point2, int extend=0
 int main(int argc, char *argv[])
 {
     // Arguments
-    float frequency = 0.036;
+    double frequency = 0.036;
     if (argc > 1 && strtol(argv[1], NULL, 10) > 0) frequency = strtol(argv[1], NULL, 10);
     int rays_number = (360/frequency);
     
-
     // Window Setup
     sf::ContextSettings settings;
         settings.antialiasingLevel = 4;
@@ -40,6 +39,7 @@ int main(int argc, char *argv[])
     }
     obstacle[shape_sides].position = obstacle[0].position;
 
+
     while (window.isOpen()){
 
         sf::Event event;
@@ -54,17 +54,18 @@ int main(int argc, char *argv[])
         }
         window.clear();
 
-        float mouse_x = sf::Mouse::getPosition(window).x;
-        float mouse_y = sf::Mouse::getPosition(window).y;
+        double mouse_x = sf::Mouse::getPosition(window).x;
+        double mouse_y = sf::Mouse::getPosition(window).y;
 
         for(int li = 0; li < rays_number; li++){
-            float rotation = (li*frequency) * M_PI / 180;
+            double rotation = (li*frequency) * M_PI / 180;
+            if(rotation == 0 || rotation == M_PI) rotation -= 0.0001; // avoid infinite gradients
 
             // Set ray endpoints
             ray[0].position = sf::Vector2f(mouse_x, mouse_y);
-            float radius = 10000;
-            float ray_x = mouse_x - radius * sin(rotation);
-            float ray_y = mouse_y + radius * cos(rotation);
+            double radius = 10000;
+            double ray_x = mouse_x - radius * sin(rotation);
+            double ray_y = mouse_y + radius * cos(rotation);
             ray[1].position = sf::Vector2f(ray_x, ray_y);
 
             // Wall collision
@@ -105,23 +106,25 @@ bool is_between(sf::Vector2f line_point1, sf::Vector2f line_point2, sf::Vector2f
     return false;
 }
 
-sf::Vector2f intersection(sf::Vector2f line1_point1, sf::Vector2f line1_point2, 
-                          sf::Vector2f line2_point1, sf::Vector2f line2_point2) {
-   double a = line1_point2.y - line1_point1.y;
-   double b = line1_point1.x - line1_point2.x;
-   double c = a*(line1_point1.x) + b*(line1_point1.y);
+// for an explanation of this function,
+// have a look at this desmos i made
+// in order to illustrate what's going on
+// https://www.desmos.com/calculator/vcnvqt5i3p 
+sf::Vector2f intersection(sf::Vector2f line1_point1, sf::Vector2f line1_point2, sf::Vector2f line2_point1, sf::Vector2f line2_point2){
+    // y1 = gradient1 * x + intercept1
+    double gradient1  = (line1_point2.y - line1_point1.y) / (line1_point2.x - line1_point1.x);
+    double intercept1 = line1_point1.y - gradient1 * line1_point1.x;
+    // y2 = gradient2 * x + intercept2
+    double gradient2  = (line2_point2.y - line2_point1.y) / (line2_point2.x - line2_point1.x);
+    double intercept2 = line2_point1.y - gradient2 * line2_point1.x;
+    // gradient2 * x + intercept2 = gradient1 * x + intercept2
+    // (gradient2 - gradient1) * x = (intercept2 - intercept1)
+    // x = (intercept2 - intercept1) / (gradient2 - gradient1)
+    double intersection_x = -((intercept2 - intercept1) / (gradient2 - gradient1));
+    double intersection_y = gradient2 * intersection_x + intercept2;
+    //std::cout << "y=" << gradient1 << "x + " << intercept1 << "(" << intersection_x << ", " << intersection_y << ")" << std::endl;
 
-   double a1 = line2_point2.y - line2_point1.y;
-   double b1 = line2_point1.x - line2_point2.x;
-   double c1 = a1*(line2_point1.x)+ b1*(line2_point1.y);
-   double det = a*b1 - a1*b;
-   if (det == 0) {
-      return sf::Vector2f(9999999, 9999999);
-   } else {
-      double x = (b1*c - b*c1)/det;
-      double y = (a*c1 - a1*c)/det;
-      return sf::Vector2f(x, y);
-   }
+    return sf::Vector2f(intersection_x, intersection_y);
 }
 
 sf::CircleShape mark_point(sf::Vector2f point, sf::Color color){
@@ -134,12 +137,12 @@ sf::CircleShape mark_point(sf::Vector2f point, sf::Color color){
 
 sf::VertexArray mark_line(sf::Vector2f point1, sf::Vector2f point2, int extend){
     sf::VertexArray line(sf::Lines, 2);
-    float gradient = (point2.y - point1.y) / (point2.x - point1.x);
+    double gradient = (point2.y - point1.y) / (point2.x - point1.x);
     
-    float x1 = point1.x - extend;
-    float y1 = point1.y - (gradient*extend);
-    float x2 = point2.x + extend;
-    float y2 = point2.y + (gradient*extend);
+    double x1 = point1.x - extend;
+    double y1 = point1.y - (gradient*extend);
+    double x2 = point2.x + extend;
+    double y2 = point2.y + (gradient*extend);
     line[0].position = sf::Vector2f(x1, y1);
     line[1].position = sf::Vector2f(x2, y2);
 
