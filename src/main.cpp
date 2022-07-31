@@ -36,10 +36,7 @@ int main(int argc, char *argv[])
     shape.setOrigin(shape.getRadius(), shape.getRadius());
     shape.setPosition(500, 300);
     shape.setRotation(60);
-    shape.setFillColor(sf::Color::Blue);
-    obstacle obstacle1;
-        obstacle1.shape = shape;
-        obstacle1.type  = 0;
+    obstacle obstacle1 = {shape, 0};
     obstacles.push_back(obstacle1);
 
     shape.setRadius(160);
@@ -47,10 +44,7 @@ int main(int argc, char *argv[])
     shape.setOrigin(shape.getRadius(), shape.getRadius());
     shape.setPosition(900, 200);
     shape.setRotation(-45);
-    shape.setFillColor(sf::Color::Yellow);
-    obstacle obstacle2;
-        obstacle2.shape = shape;
-        obstacle2.type  = 1;
+    obstacle obstacle2 = {shape, 1};
     obstacles.push_back(obstacle2);
 
     shape.setRadius(60);
@@ -58,10 +52,7 @@ int main(int argc, char *argv[])
     shape.setOrigin(shape.getRadius(), shape.getRadius());
     shape.setPosition(450, 600);
     shape.setRotation(30);
-    shape.setFillColor(sf::Color::Red);
-    obstacle obstacle3;
-        obstacle3.shape = shape;
-        obstacle3.type  = 0;
+    obstacle obstacle3 = {shape, 0};
     obstacles.push_back(obstacle3);
 
     obstacleMap.obstacles = obstacles;
@@ -75,10 +66,10 @@ int main(int argc, char *argv[])
         while (window.pollEvent(event))
         {
             if (event.type == sf::Event::Closed)
-                    window.close();   
+                window.close();   
             if (event.type == sf::Event::Resized){
-                    sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
-                    window.setView(sf::View(visibleArea));
+                sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
+                window.setView(sf::View(visibleArea));
             }
         }
 
