@@ -27,67 +27,49 @@ int main(int argc, char *argv[])
 
     // Obstacle & Ray Setup
     sf::VertexArray ray(sf::Lines, 2);
-    sf::CircleShape shape;
-    std::vector<obstacle> obstacles;
     obstacleMap obstacleMap;
-    
-    shape.setRadius(100);
-    shape.setPointCount(5);
-    shape.setOrigin(shape.getRadius(), shape.getRadius());
-    shape.setPosition(500, 300);
-    shape.setRotation(60);
-    obstacle obstacle1 = {shape, 0};
-    obstacles.push_back(obstacle1);
-
-    shape.setRadius(160);
-    shape.setPointCount(3);
-    shape.setOrigin(shape.getRadius(), shape.getRadius());
-    shape.setPosition(900, 200);
-    shape.setRotation(-45);
-    obstacle obstacle2 = {shape, 1};
-    obstacles.push_back(obstacle2);
-
-    shape.setRadius(60);
-    shape.setPointCount(5);
-    shape.setOrigin(shape.getRadius(), shape.getRadius());
-    shape.setPosition(450, 600);
-    shape.setRotation(30);
-    obstacle obstacle3 = {shape, 0};
-    obstacles.push_back(obstacle3);
-
-    obstacleMap.obstacles = obstacles;
     obstacleMap.create_points();
 
     int selected_obstacle_index = -1;
 
     while (window.isOpen()){
 
+        double mouse_x = sf::Mouse::getPosition(window).x;
+        double mouse_y = sf::Mouse::getPosition(window).y;
+
         sf::Event event;
         while (window.pollEvent(event))
         {
-            if (event.type == sf::Event::Closed)
+            if(event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Space){
+                for(int oi = 0; oi < obstacleMap.obstacles_count; oi++){
+                if(obstacleMap.obstacles[oi].shape.getGlobalBounds().contains(mouse_x, mouse_y)){
+                    if(obstacleMap.obstacles[oi].type == 2) obstacleMap.obstacles[oi].type = 0;
+                    else obstacleMap.obstacles[oi].type += 1;
+
+                    break;
+                    }
+                }
+            }
+            else if (event.type == sf::Event::Closed)
                 window.close();   
-            if (event.type == sf::Event::Resized){
+            else if (event.type == sf::Event::Resized){
                 sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
                 window.setView(sf::View(visibleArea));
             }
         }
 
-        double mouse_x = sf::Mouse::getPosition(window).x;
-        double mouse_y = sf::Mouse::getPosition(window).y;
-
+        // Obstacle Drag
         if (sf::Mouse::isButtonPressed(sf::Mouse::Left)){
             if(selected_obstacle_index == -1){
                 for(int oi = 0; oi < obstacleMap.obstacles_count; oi++){
-                    if(obstacles[oi].shape.getGlobalBounds().contains(mouse_x, mouse_y)){
+                    if(obstacleMap.obstacles[oi].shape.getGlobalBounds().contains(mouse_x, mouse_y)){
                         selected_obstacle_index = oi;
                         break;
                     }
                 }
             }
             else{
-                obstacles[selected_obstacle_index].shape.setPosition(mouse_x, mouse_y);
-                obstacleMap.obstacles[selected_obstacle_index].shape.setPosition(obstacles[selected_obstacle_index].shape.getPosition());
+                obstacleMap.obstacles[selected_obstacle_index].shape.setPosition(mouse_x, mouse_y);
                 obstacleMap.create_points();
             }
         }
@@ -111,7 +93,7 @@ int main(int argc, char *argv[])
             // Obstacle collision
             for(int oi = 0; oi < obstacleMap.obstacles_count; oi++){
                 std::vector<sf::Vertex> obstacle_points = obstacleMap.obstacles_points[oi];
-                for(int si = 0; si < obstacles[oi].shape.getPointCount(); si++){
+                for(int si = 0; si < obstacleMap.obstacles[oi].shape.getPointCount(); si++){
 
                     sf::Vector2f intersection_point = intersection(ray[0].position, ray[1].position, obstacle_points[si].position, obstacle_points[si+1].position);
                     if( is_between(ray[0].position, ray[1].position, intersection_point) &&
@@ -129,14 +111,14 @@ int main(int argc, char *argv[])
         // Render obstacles
         if(debug){
             for(int oi = 0; oi < obstacleMap.obstacles_count; oi++){
-                for(int si = 0; si < obstacles[oi].shape.getPointCount(); si++){
+                for(int si = 0; si < obstacleMap.obstacles[oi].shape.getPointCount(); si++){
                     window.draw(mark_line(obstacleMap.obstacles_points[oi][si].position, obstacleMap.obstacles_points[oi][si+1].position, 10000));
                     window.draw(mark_point(obstacleMap.obstacles_points[oi][si].position, sf::Color::Green));
                 }
             }
         }
         else{
-            for(auto obstacle: obstacles){
+            for(auto obstacle: obstacleMap.obstacles){
                 if(obstacle.type == 0) obstacle.shape.setFillColor(sf::Color::Red);
                 else if(obstacle.type == 1) obstacle.shape.setFillColor(sf::Color::Blue);
                 else if(obstacle.type == 2) obstacle.shape.setFillColor(sf::Color::Yellow);

@@ -11,6 +11,27 @@ class obstacleMap{
         std::vector<obstacle> obstacles;
         int obstacles_count;
 
+        obstacleMap(){
+            sf::CircleShape shape;
+
+            create_obstacle(100, 5, sf::Vector2f(500, 300), 60);
+            create_obstacle(160, 3, sf::Vector2f(900, 200), -45, 1);
+            create_obstacle(60, 7, sf::Vector2f(450, 600), 30);
+
+            create_points();
+        }
+
+        void create_obstacle(int radius = 100, int point_count = 4, sf::Vector2f position = sf::Vector2f(100, 100), int rotation = 0, int type = 0){
+            sf::CircleShape shape;
+                shape.setRadius(radius);
+                shape.setOrigin(radius, radius);
+                shape.setPointCount(point_count);
+                shape.setPosition(position);
+                shape.setRotation(rotation);
+            obstacle new_obstacle = {shape, type};
+            obstacles.push_back(new_obstacle);
+        }
+
         void create_points(){
             std::vector<std::vector<sf::Vertex>> new_obstacles_points;
             obstacles_count = obstacles.size();
