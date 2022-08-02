@@ -7,7 +7,7 @@ FetchContent_Declare(SFML
     GIT_TAG 2.6.x)
 FetchContent_MakeAvailable(SFML)
 
-add_executable(raycasting src/main.cpp src/obstacle.hpp)
+add_executable(raycasting src/main.cpp src/obstacle.hpp src/core.hpp)
 target_link_libraries(raycasting PRIVATE sfml-graphics)
 target_compile_features(raycasting PRIVATE cxx_std_17)
 if (WIN32 AND BUILD_SHARED_LIBS)
